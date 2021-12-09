@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript">
+        // tạo một function mới có tên là addNewSmartPhone() và truyền function successHandler vào
+        // thuộc tính success để thực hiện việc tạo mới một đối tượng Smartphone:-->
+        function addNewBlog() {
+            // thực hiện lấy dữ liệu từ các input tương ứng
+            let title = $('#title').val();
+            let author = $('#author').val();
+            let category = $('#category').val();
+            // gán các biến vào các trường tương ứng của đối tượng json (newBlog).
+            // Json gửi thế nào thì đối tượng gửi thế đấy
+            let newBlog = {
+                title: title,
+                author: author,
+                category: {
+                    id: category
+                }
+            };
+            // goi ajax
+            $.ajax({
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                // tên API
+                type: "POST",
+                // stringify chuyển newBlog thành dạng Json, newBlog đc lưu ở body của request
+                // newBlog là kết quả sau khi gọi đến request "/blogs" với method POST
+                data: JSON.stringify(newBlog),
+                // thực hiện truyền json theo đường dẫn "/blogs"
+                url: "/blogs/list",
+                //xử lý khi thành công
+                success: successHandler
+            });
+            //chặn sự kiện mặc định của thẻ, vd: bấm thẻ <a href: ...> hay <submit> sẽ ko chuyển trang
+            event.preventDefault();
+        }
+
+        //  getBlog() để lấy ra thông tin của một đối tượng blog dưới dạng HTML như sau:
+        function getBlog(blog) {
+            return `<tr>
+                        <td >${blog.title}</td>
+                        <td >${blog.author}</td>
+                        <td >${blog.category?.name}</td>` +
+                `<td><button value="${blog.id}" onclick="openForm(this)">Edit</button></td>` +
+                `<td><button type="submit" onclick="deleteBlog(this)" value="${blog.id}">Delete</button></td>
+            </tr>`;
+        }
+
+        //  successHandler(), function này sẽ gọi đến function getBlog() và được sử dụng để gọi API
+        //  (API: phương thức trung gian kết nối các ứng dụng và thư viện khác nhau)
+        //  lấy ra danh sách blog và  làm mới lại danh sách sau khi thêm mới thành công:
+        function successHandler() {
+            $.ajax({
+                //tên API
+                type: "GET",
+                url: "/blogs/list",
+                //xử lý khi thành công
+                success: function (data) {
+                    // hien thi danh sach o day
+                    let content = '    <tr>\n' +
+                        '        <td>Title</td>\n' +
+                        '        <td>Author</td>\n' +
+                        '        <td>Category</td>\n' +
+                        '        <td>Edit</td>\n' +
+                        '        <td>Delete</td>\n' +
+                        '    </tr>';
+                    for (let i = 0; i < data.length; i++) {
+                        content += getBlog(data[i]);
+                    }
+                    document.getElementById('blogList').innerHTML = content;
+                }
+            });
+        }
+
+        function deleteBlog(a){
+            let id = a.getAttribute("value");
+            $.ajax({
+                type: "DELETE",
+                url: "/blogs/" + id,
+                success:function (){
+                    a.parentElement.parentElement.remove();
+                }
+            })
+            event.preventDefault();
+        }
+    </script>
+</head>
+<body>
+<h2><a href="/categories">List of Categories</a></h2>
+<h1><a href="/categories">List of Categories</a></h1>
+<a href="/create-blog">Create new blog</a>
+
+<form id="add-blog">
+    <table>
+        <tr>
+            <td>Title:</td>
+            <td><input type="text" id="title" placeholder="title"></td>
+        </tr>
+        <tr>
+            <td>Author:</td>
+            <td><input type="text" id="author" placeholder="author"></td>
+        </tr>
+        <tr>
+            <td>Category:</td>
+            <td>
+                <select >
+                    <option id="category" th:each="cate: ${categoryList}" th:value="${cate.id}" th:text="${cate.name}"></option>
+                </select>
+            </td>
+<!--            <td><input type="text" id="category" placeholder="category"></td>-->
+        </tr>
+        <tr>
+            <td></td>
+            <td><input type="submit" value="Add" onclick="addNewBlog()"></td>
+        </tr>
+    </table>
+</form>
+
+<h1>List of Blogs</h1>
+<table border="1" cellpadding="5" id="blogList">
+    <tr>
+        <th>Title</th>
+        <th>Author</th>
+        <th>Category</th>
+        <th>Edit</th>
+        <th>Delete</th>
+    </tr>
+    <th:block th:each="blog : ${blogList}">
+        <tr>
+            <td th:text="${blog.title}"></td>
+            <td th:text="${blog.author}"></td>
+            <td th:text="${blog.category.getName()}"></td>
+<!--            <td th:if="${blog.category}" th:text="${blog.category.name}"></td>-->
+            <!--            cho unless vào để tránh dữ liễu rỗng-->
+<!--            <td th:unless="${blog.category}"></td>-->
+            <td><a th:href="@{/edit-blog/__${blog.id}__ }">Edit</a></td>
+            <td><button type="submit" th:value="${blog.getId()}" onclick="deleteBlog(this)">Delete</button></td>
+        </tr>
+    </th:block>
+</table>
+</body>
+</html>
